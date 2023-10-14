@@ -1,0 +1,130 @@
+<html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        
+        .box{
+            display: flex;
+            flex-direction: row;
+            height:100%;
+        }
+        .classes {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            flex-grow: 15;
+        }
+        
+        .place {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+        }
+
+        .none {
+            background-color:cadetblue;
+            padding: 10px;
+            margin: 10px;
+        }
+
+        .navagation {
+            text-align: center;
+            background-color: #9fc0e0;
+            margin: 0;
+            padding: 15px;
+            border-radius: 0px;
+        }
+        .subjects {
+            background-color: aquamarine;
+        }
+        button {
+            border-radius: 100%;
+            height: 40;
+            width: 40;
+            border-style: none;
+        }
+
+        .time {
+            
+            padding: 10px;
+            text-align:center;
+            margin: 0px;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .body {
+            display: flex;
+            flex-direction: column;
+            background-color:grey;
+            margin: 0;
+            padding: 0;
+            height:100%;
+
+            font-family: "Cabin",Roboto,Arial,Helvetica,sans-serif;
+        }
+    </style>
+    
+    </head>
+
+    <body>
+    <div class="body">
+        <div class="navagation place">
+            <p id="date">This is the date</p>
+        </div>
+        <div class="box">
+            <div class="classes" id="classes">
+            </div>
+        </di>
+    </div>
+
+
+    <script>
+        // get date and put it in the date id
+        document.getElementById("date").innerHTML = new Date().toISOString().slice(0,10);
+        
+
+        async function displayClasses(){
+            classes =  await window.electronAPI.fetchdata()
+
+            classes.sort((a, b) => (a.start > b.start) ? 1 : -1)
+            
+            classes.forEach(element => {
+                if(element.activityType == 1){
+                    console.log(element.longTitleWithoutTime + " " + element.start + " " + element.finish)
+
+                    
+
+                    let html = `<div class="place" style="background-color: ${element.backgroundColor}">${element.longTitle}</div>`;
+
+                    const elem = document.getElementById("classes");
+                    elem.insertAdjacentHTML("beforeend", html)
+                }
+            });
+        }
+
+
+        displayClasses()
+        /*
+        classes.forEach((str) => {
+            const classes = document.getElementById("classes");
+            let html = `<div class="place">${str}</div>`;
+            if(str == false){
+                html = `<div class="none">${str}</div>`;
+            }
+            classes.insertAdjacentHTML("beforeend", html)
+            console.log(str)
+        })
+        */
+
+        for(let i = 8; i < 18; i ++){
+            const sidebar = document.getElementById("sidebar");
+            sidebar.insertAdjacentHTML("beforeend", `<p class="time">${i <= 12 ? i : i-12}:00${i <= 12 ? "am" : "pm"}</p>`)
+        }
+
+        
+    </script>
+    </body>
+</html>
