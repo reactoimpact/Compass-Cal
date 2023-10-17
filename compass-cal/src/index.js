@@ -1,12 +1,9 @@
 const { app, Tray, Menu, BrowserWindow, session, net, ipcMain, webContents } = require('electron');
 const path = require('path');
+const appFolder = path.dirname(process.execPath)
 
-async function getDay(session_id = "", user_id = 1111, domain = "SCHOOL-LOCATION.compass.education", day = "2023-10-09"){
-  // day = new Date().toISOString().slice(0,10);
-  const url = `https://${domain}/Services/Calendar.svc/GetCalendarEventsByUser`;
-
-  try {    
-  const response = await net.fetch(url, {
+async function getDay(session_id = String, user_id = Number, domain = String, day = String){    
+  return await net.fetch(`https://${domain}/Services/Calendar.svc/GetCalendarEventsByUser`, {
       method: 'POST',
       headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0',
@@ -14,35 +11,34 @@ async function getDay(session_id = "", user_id = 1111, domain = "SCHOOL-LOCATION
       'Cookie': `ASP.NET_SessionId= ${session_id};`, // need this aswell as user_id to acess api
       },
       body: JSON.stringify({
-        userId: user_id, // use_id is a 3-4 digit number
+        userId: user_id, 
         startDate: day,
-        endDate: day
+        endDate: day,
+        start: 0,
       }),
-  }).then((res) => res.json())
-
-  return response.d
-
-  } catch (error) {
-    console.error('Error at fetch:', error);
-    return false
-  }
+  }).then((res) => 
+    res.json()
+  ).then((data) => { 
+    return data.d
+  }).catch((err) => {
+    console.log("There was an error in the class fetch: " + err)
+  })
 }
 
 // user data for the session
 let user = {
-  session_id: "",
-  id: 1111,
-  school_domain: ""
+  logged_in: false,
+  session_id: String,
+  id: Number,
+  school_domain: String
 }
 
 async function createWindow() {
   const windowWidth = 350;
   const windowHeight = 460;
 
-  // Get the bounds of the tray icon
+  // Get the bounds of the tray icon and calc the position of tray icon
   const trayBounds = tray.getBounds();
-
-  // Calculate the position to place the window above the tray icon
   const windowX = Math.round(trayBounds.x + trayBounds.width / 2 - windowWidth / 2);
   const windowY = Math.round(trayBounds.y - windowHeight); 
 
@@ -75,12 +71,7 @@ async function createWindow() {
 
   window.webContents.on('did-navigate', async (event, url) => {
     // Inject CSS to hide the scrollbar from the window
-    window.webContents.insertCSS(`
-      body {
-        overflow: hidden;
-      }
-    `);
-    console.log(`Navigated to: ${url}`); // check what is loaded to the renderer
+    window.webContents.insertCSS(`body { overflow: hidden; }`);
 
     // if the url matches https://SCHOOL-LOCATION.compass.education with no trailing backslashes.
     if (url.match(/^(?:https?:\/\/)?([a-z0-9]+-[a-z0-9]+)\.compass\.education\/$/i)) {
@@ -91,40 +82,47 @@ async function createWindow() {
       user.session_id = await session.defaultSession.cookies.get({ name: "ASP.NET_SessionId" }).then((val) =>  val[0].value)
       
       window.loadFile(path.join(__dirname, 'index.html')); // load the main html file
-      // console.log(await getDay(user.session_id, user.id, user.domain, "2021-10-13"))
+      user.logged_in = true
     }
   });
 }
 
+// TODO: seperate auth and info windows
+
 app.whenReady().then(() => {
+
+  // create the tray icon and the logic for it
   const iconPath = path.join(__dirname, 'icon.ico');
   tray = new Tray(iconPath);
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Compass Cal', enabled: false }, 
-    { label: 'Settings' },
+    { label: 'Settings' }, // TODO: add settings window
     { label: 'Quit', click: () => app.quit() }
   ]);
 
   tray.setToolTip('Compass Cal');
   tray.setContextMenu(contextMenu);
 
-  
   tray.on('click', () => {
-    if (window.isVisible()) {
-      window.hide();
-    } else {
+    if (!window.isVisible()) {
       window.show();
     }
   });
 
   // handle the fetchdata ipc call from the renderer
   ipcMain.handle('fetchdata', async (event, ...args) => {
-    return await getDay(user.session_id, user.id, user.domain)
+    return await getDay(user.session_id, user.id, user.domain, ...args)
   })
 
   createWindow();
 });
+
+// once the app is opened, it will open every time the user logs in
+app.setLoginItemSettings({
+  openAtLogin: true,
+  path: appFolder,
+})
 
 // Quit the app when all windows are closed
 app.on('window-all-closed', () => {

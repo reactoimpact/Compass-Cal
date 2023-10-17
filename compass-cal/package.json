@@ -2,7 +2,7 @@
   "name": "compass-cal",
   "productName": "compass-cal",
   "version": "1.0.0",
-  "description": "A small sys tray app to quickly check your Compass schedule",
+  "description": "My Electron application description",
   "main": "src/index.js",
   "scripts": {
     "start": "electron-forge start",

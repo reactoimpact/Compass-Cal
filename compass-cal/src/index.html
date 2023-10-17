@@ -21,13 +21,7 @@
             margin: 10px;
             border-radius: 10px;
         }
-
-        .none {
-            background-color:cadetblue;
-            padding: 10px;
-            margin: 10px;
-        }
-
+        
         .navagation {
             text-align: center;
             background-color: #9fc0e0;
@@ -82,21 +76,22 @@
 
 
     <script>
-        // get date and put it in the date id
-        document.getElementById("date").innerHTML = new Date().toISOString().slice(0,10);
-        
-
         async function displayClasses(){
-            classes =  await window.electronAPI.fetchdata()
+            // get current date
+            let tzoffset = (new Date()).getTimezoneOffset() * 60000; 
+            let day = (new Date(Date.now() - tzoffset)).toISOString().slice(0,10);
+            document.getElementById("date").innerHTML = day
 
+            // fetch data from index.js
+            classes =  await window.electronAPI.fetchdata(day)
+
+            // sort the classes by time
             classes.sort((a, b) => (a.start > b.start) ? 1 : -1)
             
+            // loop over all the classes, and display only with element.activityType == 1 (actual classes)
             classes.forEach(element => {
                 if(element.activityType == 1){
                     console.log(element.longTitleWithoutTime + " " + element.start + " " + element.finish)
-
-                    
-
                     let html = `<div class="place" style="background-color: ${element.backgroundColor}">${element.longTitle}</div>`;
 
                     const elem = document.getElementById("classes");
@@ -105,26 +100,14 @@
             });
         }
 
+        // checks for new classes every 10 min
+        setInterval(displayClasses(), 600000)
 
-        displayClasses()
-        /*
-        classes.forEach((str) => {
-            const classes = document.getElementById("classes");
-            let html = `<div class="place">${str}</div>`;
-            if(str == false){
-                html = `<div class="none">${str}</div>`;
-            }
-            classes.insertAdjacentHTML("beforeend", html)
-            console.log(str)
-        })
-        */
 
         for(let i = 8; i < 18; i ++){
             const sidebar = document.getElementById("sidebar");
             sidebar.insertAdjacentHTML("beforeend", `<p class="time">${i <= 12 ? i : i-12}:00${i <= 12 ? "am" : "pm"}</p>`)
         }
-
-        
     </script>
     </body>
 </html>
