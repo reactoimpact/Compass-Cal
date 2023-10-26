@@ -41,7 +41,7 @@ async function createWindow() {
 
   // Get the bounds of the tray icon and calc the position of tray icon
   const trayBounds = tray.getBounds();
-  const windowX = Math.round(trayBounds.x + trayBounds.width / 2 - windowWidth / 2);
+  const windowX = Math.round(trayBounds.x - trayBounds.width / 2 - windowWidth / 2);
   const windowY = Math.round(trayBounds.y - windowHeight); 
 
   // Create the BrowserWindow
