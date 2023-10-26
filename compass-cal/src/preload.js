@@ -4,5 +4,6 @@ const { contextBridge, ipcRenderer } = require('electron')
 // fetch request is not allowed on renderer due to CORS, 
 // also it is more convinient to have user data in the main process.
 contextBridge.exposeInMainWorld('electronAPI', {
-    fetchdata: (...args) => ipcRenderer.invoke('fetchdata', ...args)
+    fetchdata: (...args) => ipcRenderer.invoke('fetchdata', ...args),
+    sendUrl: (url) => ipcRenderer.send('sendUrl', url)
 })

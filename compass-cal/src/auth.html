@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+
+        body {
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            background-color: #1e2021;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 30px;
+            
+        }
+
+
+        h1 {
+            color: #007bff;
+            text-align: center;
+        }
+
+        input[type="text"] {
+            padding: 10px 0px 10px 0;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 100%;
+            width: 100%;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            width: 100%
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Please enter your school URL</h1>
+    <input type="text" id="url" placeholder="https://your-school.compass.education/">
+    <button onclick="login()">Save</button>
+
+    <script>
+        function login() {
+            var url = document.getElementById("url").value;
+            console.log(`sending ${url} to server`);
+            window.electronAPI.sendUrl(url);
+        }
+    </script>
+</body>
+
+</html>

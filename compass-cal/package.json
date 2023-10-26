@@ -18,6 +18,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "electron-settings": "^4.0.2",
     "electron-squirrel-startup": "^1.0.0"
   },
   "devDependencies": {
@@ -27,6 +28,6 @@
     "@electron-forge/maker-squirrel": "^6.4.2",
     "@electron-forge/maker-zip": "^6.4.2",
     "@electron-forge/plugin-auto-unpack-natives": "^6.4.2",
-    "electron": "26.2.4"
+    "electron": "27.0.0"
   }
 }

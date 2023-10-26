@@ -1,6 +1,7 @@
 module.exports = {
   packagerConfig: {
     asar: true,
+    icon: 'compass-cal/src/appIcon',
   },
   rebuildConfig: {},
   makers: [

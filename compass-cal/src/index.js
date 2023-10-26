@@ -1,6 +1,8 @@
-const { app, Tray, Menu, BrowserWindow, session, net, ipcMain, webContents } = require('electron');
+const { app, Tray, Menu, BrowserWindow, session, net, ipcMain } = require('electron');
 const path = require('path');
-const appFolder = path.dirname(process.execPath)
+const settings = require('electron-settings');
+
+if (require('electron-squirrel-startup')) app.quit();
 
 async function getDay(session_id = String, user_id = Number, domain = String, day = String){    
   return await net.fetch(`https://${domain}/Services/Calendar.svc/GetCalendarEventsByUser`, {
@@ -29,7 +31,7 @@ async function getDay(session_id = String, user_id = Number, domain = String, da
 let user = {
   logged_in: false,
   session_id: String,
-  id: Number,
+  id: Number,  
   school_domain: String
 }
 
@@ -58,17 +60,26 @@ async function createWindow() {
     },
   });
 
-  // Load the compass url
-  window.loadURL("https://schools.compass.education/");
-
   // Show the window when it is ready to be displayed
   window.once('ready-to-show', () => {
     window.show();
   });
 
   // Hide the window when it loses focus
-  window.on('blur', () => window.hide() );
+  window.on('blur', () => {
+    window.hide();
+  });
 
+  if(!settings.hasSync('url')){
+    // TODO: check if the schoold_domian is in the saved user data file
+    console.log("loaded auth")
+    window.loadFile(path.join(__dirname, 'auth.html')); // load the auth html file
+  } else {
+    console.log(settings.getSync('url'))
+    window.loadURL(settings.getSync('url'));
+  }
+
+  
   window.webContents.on('did-navigate', async (event, url) => {
     // Inject CSS to hide the scrollbar from the window
     window.webContents.insertCSS(`body { overflow: hidden; }`);
@@ -87,6 +98,9 @@ async function createWindow() {
   });
 }
 
+
+
+
 // TODO: seperate auth and info windows
 
 app.whenReady().then(() => {
@@ -97,7 +111,10 @@ app.whenReady().then(() => {
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Compass Cal', enabled: false }, 
-    { label: 'Settings' }, // TODO: add settings window
+    { label: 'Settings', click: () =>  {
+      // window.loadFile(path.join(__dirname, 'settings.html'));
+      // window.show();
+    }}, // TODO: add way to exit settings
     { label: 'Quit', click: () => app.quit() }
   ]);
 
@@ -114,6 +131,13 @@ app.whenReady().then(() => {
   ipcMain.handle('fetchdata', async (event, ...args) => {
     return await getDay(user.session_id, user.id, user.domain, ...args)
   })
+  
+  ipcMain.on('sendUrl', (event, url) => {
+    user.school_domain = url
+    logged_in = true
+    settings.set('url', url)
+    window.loadURL(url);
+  })
 
   createWindow();
 });
@@ -121,7 +145,7 @@ app.whenReady().then(() => {
 // once the app is opened, it will open every time the user logs in
 app.setLoginItemSettings({
   openAtLogin: true,
-  path: appFolder,
+  path: app.getPath('exe'),
 })
 
 // Quit the app when all windows are closed
