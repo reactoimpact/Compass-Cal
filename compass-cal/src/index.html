@@ -14,12 +14,18 @@
             flex-direction: column;
             justify-content: space-around;
             flex-grow: 15;
+            align-items: stretch;
+            align-content: stretch;
         }
         
         .place {
-            padding: 10px;
-            margin: 10px;
-            border-radius: 10px;
+            align-self: stretch;
+            height: 100%;
+            margin: 0px 0px 0px 0px;
+            text-align: left;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         
         .navagation {
@@ -27,20 +33,13 @@
             background-color: #9fc0e0;
             margin: 0;
             padding: 15px;
-            border-radius: 0px;
+            border: #000000;
         }
         .subjects {
             background-color: aquamarine;
         }
-        button {
-            border-radius: 100%;
-            height: 40;
-            width: 40;
-            border-style: none;
-        }
 
         .time {
-            
             padding: 10px;
             text-align:center;
             margin: 0px;
@@ -56,7 +55,6 @@
             margin: 0;
             padding: 0;
             height:100%;
-
             font-family: "Cabin",Roboto,Arial,Helvetica,sans-serif;
         }
     </style>
@@ -65,7 +63,7 @@
 
     <body>
     <div class="body">
-        <div class="navagation place">
+        <div class="navagation">
             <p id="date">This is the date</p>
         </div>
         <div class="box">
@@ -90,18 +88,17 @@
             
             // loop over all the classes, and display only with element.activityType == 1 (actual classes)
             classes.forEach(element => {
-                if(element.activityType == 1){
-                    console.log(element.longTitleWithoutTime + " " + element.start + " " + element.finish)
-                    let html = `<div class="place" style="background-color: ${element.backgroundColor}">${element.longTitle}</div>`;
+                if(element.activityType == 1 | element.activityType == 2){
+                    console.log(element.activityType + " " + element.longTitleWithoutTime + " " + element.start + " " + element.finish)
+                    let html = `</div><div class="place" style="background-color: ${element.backgroundColor}">${element.longTitle}</div>`;
 
                     const elem = document.getElementById("classes");
                     elem.insertAdjacentHTML("beforeend", html)
                 }
             });
         }
-
-        // checks for new classes every 10 min
-        setInterval(displayClasses(), 600000)
+        
+        displayClasses();
 
 
         for(let i = 8; i < 18; i ++){

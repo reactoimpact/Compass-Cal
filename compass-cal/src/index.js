@@ -36,29 +36,7 @@ let user = {
 }
 
 async function createWindow() {
-  const windowWidth = 350;
-  const windowHeight = 460;
-
-  // Get the bounds of the tray icon and calc the position of tray icon
-  const trayBounds = tray.getBounds();
-  const windowX = Math.round(trayBounds.x - trayBounds.width / 2 - windowWidth / 2);
-  const windowY = Math.round(trayBounds.y - windowHeight); 
-
-  // Create the BrowserWindow
-  window = new BrowserWindow({
-    width: windowWidth,
-    height: windowHeight,
-    x: windowX,
-    y: windowY,
-    frame: false, // Set to true if you want a frame around the window
-    show: false, // Set to false to show the window later
-    resizable: false, // Set to true if you want to allow resizing the window
-    alwaysOnTop: true, // Set to true to keep the window always on top
-    skipTaskbar: true, // hides the app from showing in the taskbar
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
-    },
-  });
+  createTrayWindow();
 
   // Show the window when it is ready to be displayed
   window.once('ready-to-show', () => {
@@ -71,7 +49,6 @@ async function createWindow() {
   });
 
   if(!settings.hasSync('url')){
-    // TODO: check if the schoold_domian is in the saved user data file
     console.log("loaded auth")
     window.loadFile(path.join(__dirname, 'auth.html')); // load the auth html file
   } else {
@@ -86,7 +63,6 @@ async function createWindow() {
 
     // if the url matches https://SCHOOL-LOCATION.compass.education with no trailing backslashes.
     if (url.match(/^(?:https?:\/\/)?([a-z0-9]+-[a-z0-9]+)\.compass\.education\/$/i)) {
-
       // get domain and user_id thought the Compass object on the loaded website. The session Id is from the cookies.
       user.domain = await window.webContents.executeJavaScript(`Compass.schoolPrimaryFqdn`)
       user.id = await window.webContents.executeJavaScript(`Compass.organisationUserId`)
@@ -94,6 +70,10 @@ async function createWindow() {
       
       window.loadFile(path.join(__dirname, 'index.html')); // load the main html file
       user.logged_in = true
+    }
+    
+    if(!url.match(/^(?:https?:\/\/)?([a-z0-9]+-[a-z0-9]+)\.compass\.education\/$/i) | !url.match(/^(?:https?:\/\/)?([a-z0-9]+)\.compass\.education\/$/i)){
+      window.hide();
     }
   });
 }
@@ -105,6 +85,39 @@ async function createWindow() {
 
 app.whenReady().then(() => {
 
+  // create the tray icon
+  createTrayIcon();
+
+  // handle the fetchdata ipc call from the renderer
+  ipcMain.handle('fetchdata', async (event, ...args) => {
+    window.show();
+    return await getDay(user.session_id, user.id, user.domain, ...args)
+  })
+  
+  ipcMain.on('sendUrl', (event, url) => {
+    user.school_domain = url
+    logged_in = true
+    settings.set('url', url)
+    window.loadURL(url);
+  })
+});
+
+// once the app is opened, it will open every time the user logs in
+app.setLoginItemSettings({
+  openAtLogin: true,
+  path: app.getPath('exe'),
+})
+
+// Quit the app when all windows are closed
+app.on('window-all-closed', () => {
+  app.quit();
+});
+
+
+
+
+
+function createTrayIcon() {
   // create the tray icon and the logic for it
   const iconPath = path.join(__dirname, 'icon.ico');
   tray = new Tray(iconPath);
@@ -127,28 +140,31 @@ app.whenReady().then(() => {
     }
   });
 
-  // handle the fetchdata ipc call from the renderer
-  ipcMain.handle('fetchdata', async (event, ...args) => {
-    return await getDay(user.session_id, user.id, user.domain, ...args)
-  })
-  
-  ipcMain.on('sendUrl', (event, url) => {
-    user.school_domain = url
-    logged_in = true
-    settings.set('url', url)
-    window.loadURL(url);
-  })
-
   createWindow();
-});
+}
 
-// once the app is opened, it will open every time the user logs in
-app.setLoginItemSettings({
-  openAtLogin: true,
-  path: app.getPath('exe'),
-})
+function createTrayWindow() {
+  const windowWidth = 350;
+  const windowHeight = 460;
 
-// Quit the app when all windows are closed
-app.on('window-all-closed', () => {
-  app.quit();
-});
+  // Get the bounds of the tray icon and calc the position of tray icon
+  const trayBounds = tray.getBounds();
+  const windowX = Math.round(trayBounds.x - trayBounds.width / 2 - windowWidth / 2 + 16);
+  const windowY = Math.round(trayBounds.y - windowHeight); 
+
+  // Create the BrowserWindow
+  window = new BrowserWindow({
+    width: windowWidth,
+    height: windowHeight,
+    x: windowX,
+    y: windowY,
+    frame: false, // Set to true if you want a frame around the window
+    show: false, // Set to false to show the window later
+    resizable: false, // Set to true if you want to allow resizing the window
+    alwaysOnTop: true, // Set to true to keep the window always on top
+    skipTaskbar: true, // hides the app from showing in the taskbar
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    },
+  });
+}
