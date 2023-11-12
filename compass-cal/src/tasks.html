@@ -1,0 +1,100 @@
+<html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        
+        .box{
+            display: flex;
+            flex-direction: row;
+            height:100%;
+        }
+        .classes {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            flex-grow: 15;
+            align-items: stretch;
+            align-content: stretch;
+        }
+        
+        .place {
+            align-self: stretch;
+            height: 100%;
+            margin: 0px 0px 0px 0px;
+            text-align: left;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .navagation {
+            text-align: center;
+            background-color: #9fc0e0;
+            margin: 0;
+            padding: 15px;
+            border: #000000;
+        }
+        .subjects {
+            background-color: aquamarine;
+        }
+
+        .time {
+            padding: 10px;
+            text-align:center;
+            margin: 0px;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .body {
+            display: flex;
+            flex-direction: column;
+            background-color:grey;
+            margin: 0;
+            padding: 0;
+            height:100%;
+            font-family: "Cabin",Roboto,Arial,Helvetica,sans-serif;
+        }
+    </style>
+    
+    </head>
+
+    <body>
+    <div class="body">
+        <div class="navagation">
+            <p id="date">Tasks Due</p>
+        </div>
+        <div class="box">
+            <div class="classes" id="classes">
+            </div>
+        </di>
+    </div>
+
+
+    <script>
+        async function displayClasses(){
+
+            // fetch data from index.js
+            classes =  await window.electronAPI.fetchdata(day)
+
+            // sort the classes by time
+            classes.sort((a, b) => (a.start > b.start) ? 1 : -1)
+            
+            // loop over all the classes, and display only with element.activityType == 1 (actual classes)
+            classes.forEach(element => {
+                if(element.activityType == 1 | element.activityType == 2){
+                    console.log(element.activityType + " " + element.longTitleWithoutTime + " " + element.start + " " + element.finish)
+                    let html = `</div><div class="place" style="background-color: ${element.backgroundColor}">${element.longTitle}</div>`;
+
+                    const elem = document.getElementById("classes");
+                    elem.insertAdjacentHTML("beforeend", html)
+                }
+            });
+        }
+        
+        //displayClasses();
+    </script>
+    </body>
+</html>

@@ -4,16 +4,17 @@ const settings = require('electron-settings');
 
 if (require('electron-squirrel-startup')) app.quit();
 
-async function getDay(session_id = String, user_id = Number, domain = String, day = String){    
-  return await net.fetch(`https://${domain}/Services/Calendar.svc/GetCalendarEventsByUser`, {
+
+async function getDay(user, day = String){    
+  return await net.fetch(`${user.school_domain}Services/Calendar.svc/GetCalendarEventsByUser`, {
       method: 'POST',
       headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0',
       'Content-Type': 'application/json',
-      'Cookie': `ASP.NET_SessionId= ${session_id};`, // need this aswell as user_id to acess api
+      'Cookie': `ASP.NET_SessionId= ${user.session_id};`, // need this aswell as user.id to acess api
       },
       body: JSON.stringify({
-        userId: user_id, 
+        userId: user.id, 
         startDate: day,
         endDate: day,
         start: 0,
@@ -32,7 +33,7 @@ let user = {
   logged_in: false,
   session_id: String,
   id: Number,  
-  school_domain: String
+  school_domain: String,
 }
 
 async function createWindow() {
@@ -49,73 +50,44 @@ async function createWindow() {
   });
 
   if(!settings.hasSync('url')){
-    console.log("loaded auth")
     window.loadFile(path.join(__dirname, 'auth.html')); // load the auth html file
   } else {
-    console.log(settings.getSync('url'))
-    window.loadURL(settings.getSync('url'));
+    user.school_domain = settings.getSync('url')
+    window.loadURL(user.school_domain);
   }
 
   
   window.webContents.on('did-navigate', async (event, url) => {
-    // Inject CSS to hide the scrollbar from the window
-    window.webContents.insertCSS(`body { overflow: hidden; }`);
+  window.webContents.insertCSS(`body { overflow: hidden; }`); // hide the scrollbar
 
-    // if the url matches https://SCHOOL-LOCATION.compass.education with no trailing backslashes.
-    if (url.match(/^(?:https?:\/\/)?([a-z0-9]+-[a-z0-9]+)\.compass\.education\/$/i)) {
-      // get domain and user_id thought the Compass object on the loaded website. The session Id is from the cookies.
-      user.domain = await window.webContents.executeJavaScript(`Compass.schoolPrimaryFqdn`)
+
+    if (url == user.school_domain && user.logged_in == false) {
+      // get user_id and session_id through the Compass object anf cookies on the loaded website.
       user.id = await window.webContents.executeJavaScript(`Compass.organisationUserId`)
       user.session_id = await session.defaultSession.cookies.get({ name: "ASP.NET_SessionId" }).then((val) =>  val[0].value)
       
       window.loadFile(path.join(__dirname, 'index.html')); // load the main html file
+
       user.logged_in = true
-    }
-    
-    if(!url.match(/^(?:https?:\/\/)?([a-z0-9]+-[a-z0-9]+)\.compass\.education\/$/i) | !url.match(/^(?:https?:\/\/)?([a-z0-9]+)\.compass\.education\/$/i)){
-      window.hide();
     }
   });
 }
 
-
-
-
-// TODO: seperate auth and info windows
-
 app.whenReady().then(() => {
-
   // create the tray icon
   createTrayIcon();
 
   // handle the fetchdata ipc call from the renderer
   ipcMain.handle('fetchdata', async (event, ...args) => {
-    window.show();
-    return await getDay(user.session_id, user.id, user.domain, ...args)
+    return await getDay(user, ...args)
   })
   
   ipcMain.on('sendUrl', (event, url) => {
     user.school_domain = url
-    logged_in = true
     settings.set('url', url)
     window.loadURL(url);
   })
 });
-
-// once the app is opened, it will open every time the user logs in
-app.setLoginItemSettings({
-  openAtLogin: true,
-  path: app.getPath('exe'),
-})
-
-// Quit the app when all windows are closed
-app.on('window-all-closed', () => {
-  app.quit();
-});
-
-
-
-
 
 function createTrayIcon() {
   // create the tray icon and the logic for it
@@ -125,9 +97,17 @@ function createTrayIcon() {
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Compass Cal', enabled: false }, 
     { label: 'Settings', click: () =>  {
-      // window.loadFile(path.join(__dirname, 'settings.html'));
-      // window.show();
-    }}, // TODO: add way to exit settings
+      if(user.logged_in){
+        window.loadFile(path.join(__dirname, 'settings.html'));
+        window.show();
+      }
+    }}, 
+    { label: 'Tasks', click: () =>  {
+      if(user.logged_in){
+        window.loadFile(path.join(__dirname, 'tasks.html'));
+        window.show();
+      }
+    }}, 
     { label: 'Quit', click: () => app.quit() }
   ]);
 
@@ -136,6 +116,10 @@ function createTrayIcon() {
 
   tray.on('click', () => {
     if (!window.isVisible()) {
+      // if the user is logged in and not on the index page, load the index page
+      if(user.logged_in && !/index\.html$/.test(window.webContents.getURL())){
+        window.loadFile(path.join(__dirname, 'index.html'));
+      }
       window.show();
     }
   });
@@ -168,3 +152,15 @@ function createTrayWindow() {
     },
   });
 }
+
+
+// once the app is opened, it will open every time the user logs in
+app.setLoginItemSettings({
+  openAtLogin: true,
+  path: app.getPath('exe'),
+})
+
+// Quit the app when all windows are closed
+app.on('window-all-closed', () => {
+  app.quit();
+});
